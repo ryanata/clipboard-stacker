@@ -1,18 +1,17 @@
 # Clipboard Stacker 🪣 [Beta]
 
-[![GitHub Release](https://img.shields.io/github/v/release/ryanata/clipboard-stacker?include_prereleases)](https://github.com/ryanata/clipboard-stacker/releases)
+[![VSIX Version](https://img.shields.io/visual-studio-marketplace/v/ryanata.clipboard-stacker)](https://marketplace.visualstudio.com/items?itemName=ryanata.clipboard-stacker)
 
 > Multi-selection clipboard buffer for accumulating code snippets and files for LLMs
 
 ## ⚙️ Installation
 
-1. Download latest `.vsix` from [Releases](https://github.com/ryanata/clipboard-stacker/releases)
-2. In VSCode: 
-   - Open Extensions view
-   - Click `⋯` → "Install from VSIX"
-3. Select downloaded file and reload VSCode
+1. Open Extensions view (`⌘⇧X` or `Ctrl+Shift+X`)
+2. Search for "Clipboard Stacker"
+3. Click Install
+4. Reload VSCode when prompted
 
-*Beta Note:* During testing, you may need to enable unsigned extensions in VS Code settings.
+*Beta Note:* To get pre-release updates, click the gear icon next to the extension and select "Switch to Pre-Release Version".
 
 ## Core Features
 
