@@ -24,14 +24,17 @@
   - Clear buffer (`⌘⇧⌫`/`Ctrl+Shift+Backspace`)
     - Can also clear buffer via status bar in bottom right
 
+## 📜 License
+Distributed under the [MIT License](LICENSE).
+
 ## Known Issues (Beta)
 
 - No settings to customize copy behavior
 
 ## Release Notes
 
-### 0.1.0-beta.1
-Initial beta release with core functionality:
+### 0.1.0 Prerelease
+Initial pre-release with core functionality:
 - Code snippet accumulation with context
 - Multi-file selection
 - Status bar integration
