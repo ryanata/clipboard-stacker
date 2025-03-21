@@ -1,15 +1,23 @@
+import path from 'path';
 import * as vscode from 'vscode';
 
-const outputChannel = vscode.window.createOutputChannel('Clipboard Stacker Debug');
 let buffer = '';
+let itemCount = 0;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	// Create status bar item
+	const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+	context.subscriptions.push(statusBarItem);
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "clipboard-stacker" is now active!');
+	function updateStatusBar() {
+		statusBarItem.text = itemCount === 0 ? '🪣 Empty' : `🪣 ${itemCount} items`;
+		statusBarItem.command = 'clipboard-stacker.clearBuffer';
+		statusBarItem.show();
+	}
+
+	updateStatusBar();
 
 	context.subscriptions.push(vscode.commands.registerCommand('clipboard-stacker.addFileToBuffer', async () => {
 		try {
@@ -21,40 +29,63 @@ export function activate(context: vscode.ExtensionContext) {
 
 			// Create a QuickPick instance
 			const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem>();
+			quickPick.canSelectMany = true;
 			quickPick.placeholder = 'Type to search for files...';
-			quickPick.title = "Select File for Buffer (Cmd+C to add)";
+			quickPick.title = "Select File for Buffer (Space to add)";
 			quickPick.matchOnDescription = true; // Match on file path as well
-			quickPick.matchOnDetail = true;     // and detail (though we won't use detail much)
 
 			// --- Populate the QuickPick ---
 			const items = await getFileQuickPickItems(workspaceFolders); // Get the file items, we have to define this function (see below)
 			quickPick.items = items;
 
+
 			// --- Handle Selection ---
 			quickPick.onDidAccept(async () => {
-				const selectedItem = quickPick.selectedItems[0];
-				if (selectedItem) {
+				const selectedItems = quickPick.selectedItems;
+				if (selectedItems.length === 0) {
+					vscode.window.showWarningMessage('No files selected');
+					quickPick.dispose();
+					return;
+				}
+
+				const entries: string[] = [];
+				for (const selectedItem of selectedItems) {
 					const filePath = selectedItem.description;
 					if (!filePath) {
-						vscode.window.showErrorMessage("No file path available");
-						return;
+						vscode.window.showErrorMessage("No file path available for a selected item");
+						continue;
 					}
-					const uri = vscode.Uri.file(filePath);
-					const fileData = await vscode.workspace.fs.readFile(uri);
-					const content = Buffer.from(fileData).toString('utf-8');
-					const entry = `\`\`\`${filePath}\n${content}\n\`\`\``;
-					// const buffer = await vscode.env.clipboard.readText(); // read in buffer to append
-					let buffer = '' // initialize clipboard buffer
-					buffer = buffer ? buffer + '\n\n' + entry : entry;
-					await vscode.env.clipboard.writeText(entry); //write only the entry, not the buffer
-					vscode.window.showInformationMessage(`Added ${filePath} to clipboard buffer`);
+					const workspaceRoot = workspaceFolders[0].uri.fsPath;
+					const fullPath = path.join(workspaceRoot, filePath);
+					const uri = vscode.Uri.file(fullPath);
+					try {
+						const fileData = await vscode.workspace.fs.readFile(uri);
+						const content = Buffer.from(fileData).toString('utf-8');
+						const entry = `\`\`\`${filePath}\n${content}\n\`\`\``;
+						entries.push(entry);
+					} catch (error) {
+						vscode.window.showErrorMessage(`Failed to read ${filePath}: ${error instanceof Error ? error.message : error}`);
+					}
 				}
-				quickPick.dispose(); // IMPORTANT: Dispose the QuickPick after use.
+
+				if (entries.length > 0) {
+					buffer = buffer ? buffer + '\n\n' + entries.join('\n\n') : entries.join('\n\n');
+					await vscode.env.clipboard.writeText(buffer);
+					vscode.window.showInformationMessage(`Added ${entries.length} files to clipboard buffer`);
+					itemCount += entries.length;
+				}
+				updateStatusBar();
+
+				quickPick.dispose();
 			});
 
 			quickPick.onDidHide(() => quickPick.dispose()); // Dispose if user cancels
 
 			quickPick.show(); // Show the QuickPick
+
+			(quickPick as any)._onDidKeyDown = (key: string) => {
+				console.log(key);
+			};
 
 		} catch (error) {
 			vscode.window.showErrorMessage(`Failed to add file to buffer: ${error instanceof Error ? error.message : error}`);
@@ -74,35 +105,72 @@ export function activate(context: vscode.ExtensionContext) {
 			buffer = buffer ? buffer + '\n\n' + entry : entry;
 			await vscode.env.clipboard.writeText(buffer);
 			vscode.window.showInformationMessage('Added selection to clipboard buffer');
+			itemCount += 1;
+			updateStatusBar();
 		}
 	}),
 
-	vscode.commands.registerCommand('clipboard-stacker.clearBuffer', () => {
-		if (buffer) {
-			buffer = '';
-			vscode.window.showInformationMessage('Clipboard buffer cleared');
-		} else {
-			vscode.window.showWarningMessage('Clipboard buffer is already empty');
-		}
-	});
+		vscode.commands.registerCommand('clipboard-stacker.clearBuffer', async () => {
+			if (buffer) {
+				const choice = await vscode.window.showWarningMessage(
+					'Are you sure you want to clear the clipboard buffer?',
+					{ modal: true },
+					'Clear',
+					'Cancel'
+				);
+				if (choice === 'Clear') {
+					buffer = '';
+					itemCount = 0;
+					updateStatusBar();
+					vscode.window.showInformationMessage('Clipboard buffer cleared');
+				}
+			} else {
+				vscode.window.showWarningMessage('Clipboard buffer is already empty');
+			}
+		});
 }
 
 async function getFileQuickPickItems(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<vscode.QuickPickItem[]> {
     const items: vscode.QuickPickItem[] = [];
 
+    // Get the Git extension API, if available
+    const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+    const git = gitExtension?.getAPI(1);
+
     for (const folder of workspaceFolders) {
-        const folderPath = folder.uri.fsPath;
-        const files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, '**/*')); // Find all files within each workspace folder
+        let files: vscode.Uri[];
+        let repo;
 
+        // If Git is available, try to locate a repository for the folder.
+        if (git) {
+            repo = git.repositories.find((r: any) => folder.uri.fsPath.startsWith(r.rootUri.fsPath));
+        }
+
+        if (repo) {
+            // When a Git repository is found, retrieve all files and later filter out gitignored files.
+            files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, '**/*'));
+        } else {
+            // No Git repository available: mimic VS Code’s Quick Open behavior
+            // Exclude common folders like node_modules and .git.
+            const excludePattern = '**/{node_modules,.git}';
+            files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, '**/*'), excludePattern);
+        }
+
+        // If using Git, check which files are ignored.
+        let ignoredFiles: string[] = [];
+        if (repo) {
+            ignoredFiles = await repo.checkIgnore(files.map(f => f.fsPath));
+        }
+
+        // Process each file: if Git filtering is in place, skip ignored files.
         for (const fileUri of files) {
-			const relativePath = vscode.workspace.asRelativePath(fileUri.fsPath, false);
-			const label = relativePath;
-			const description = fileUri.fsPath; // add full file path to be the description
-
+            if (repo && ignoredFiles.includes(fileUri.fsPath)) {
+                continue;
+            }
+            const relativePath = vscode.workspace.asRelativePath(fileUri.fsPath, false);
             items.push({
-                label: label,
-                description: description,
-                // detail: you can add more detail such as file size using fs.stat if needed
+                label: path.basename(fileUri.fsPath),
+                description: relativePath,
             });
         }
     }

@@ -29,16 +29,19 @@
 		"keybindings": [
 			{
 				"command": "clipboard-stacker.addToBuffer",
-				"key": "ctrl+cmd+c",
+				"mac": "cmd+ctrl+c",
+				"windows": "ctrl+shift+c",
 				"when": "editorHasSelection"
 			},
 			{
 				"command": "clipboard-stacker.addFileToBuffer",
-				"key": "cmd+m"
+				"mac": "cmd+m",
+				"windows": "ctrl+m"
 			},
 			{
 				"command": "clipboard-stacker.clearBuffer",
-				"key": "ctrl+cmd+backspace",
+				"mac": "cmd+shift+backspace",
+				"windows": "ctrl+shift+backspace",
 				"when": "!editorHasSelection"
 			}
 		]
