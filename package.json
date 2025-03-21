@@ -2,7 +2,12 @@
   "name": "clipboard-stacker",
   "displayName": "Clipboard Stacker",
   "description": "Easily maintain a buffer of copied files/snippets for easy copy-pasting outside VSCode",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.1",
+  "publisher": "ryanata",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanata/clipboard-stacker"
+  },
   "engines": {
     "vscode": "^1.98.0"
   },
