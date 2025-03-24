@@ -132,42 +132,38 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function getFileQuickPickItems(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<vscode.QuickPickItem[]> {
     const items: vscode.QuickPickItem[] = [];
-
-    // Get the Git extension API, if available
-    const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
-    const git = gitExtension?.getAPI(1);
+    const ignore = require('ignore');
 
     for (const folder of workspaceFolders) {
-        let files: vscode.Uri[];
-        let repo;
-
-        // If Git is available, try to locate a repository for the folder.
-        if (git) {
-            repo = git.repositories.find((r: any) => folder.uri.fsPath.startsWith(r.rootUri.fsPath));
+        const folderPath = folder.uri.fsPath;
+        const gitignorePath = path.join(folderPath, '.gitignore');
+        
+        // Read .gitignore content if exists
+        let gitignoreContent = '';
+        try {
+            gitignoreContent = await vscode.workspace.fs.readFile(vscode.Uri.file(gitignorePath))
+                .then(content => Buffer.from(content).toString('utf-8'));
+        } catch (error) {
+            // Ignore if .gitignore doesn't exist
         }
 
-        if (repo) {
-            // When a Git repository is found, retrieve all files and later filter out gitignored files.
-            files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, '**/*'));
-        } else {
-            // No Git repository available: mimic VS Code’s Quick Open behavior
-            // Exclude common folders like node_modules and .git.
-            const excludePattern = '**/{node_modules,.git}';
-            files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, '**/*'), excludePattern);
-        }
+        // Initialize ignore instance and add patterns
+        const ig = ignore().add(gitignoreContent);
+        
+        // Add default ignore patterns
+        ig.add(['.git', 'node_modules']);
 
-        // If using Git, check which files are ignored.
-        let ignoredFiles: string[] = [];
-        if (repo) {
-            ignoredFiles = await repo.checkIgnore(files.map(f => f.fsPath));
-        }
+        // Get all files then filter
+        const files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, '**/*'));
+        
+        const filteredFiles = files.filter(fileUri => {
+            const relativePath = path.relative(folderPath, fileUri.fsPath);
+            return !ig.ignores(relativePath);
+        });
 
-        // Process each file: if Git filtering is in place, skip ignored files.
-        for (const fileUri of files) {
-            if (repo && ignoredFiles.includes(fileUri.fsPath)) {
-                continue;
-            }
-            const relativePath = vscode.workspace.asRelativePath(fileUri.fsPath, false);
+        // Create QuickPick items
+        for (const fileUri of filteredFiles) {
+            const relativePath = path.relative(folderPath, fileUri.fsPath);
             items.push({
                 label: path.basename(fileUri.fsPath),
                 description: relativePath,
