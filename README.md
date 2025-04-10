@@ -2,38 +2,62 @@
 
 [![VSIX Version](https://img.shields.io/visual-studio-marketplace/v/ryanata.clipboard-stacker)](https://marketplace.visualstudio.com/items?itemName=ryanata.clipboard-stacker)
 
-> Multi-selection clipboard buffer for accumulating code snippets and files for LLMs
+> Accumulate multiple code snippets and files into a single clipboard buffer for easy pasting.
 
-## ⚙️ Installation
+---
 
-1. Open Extensions view (`⌘⇧X` or `Ctrl+Shift+X`)
-2. Search for "Clipboard Stacker"
-3. Click Install
-4. Reload VSCode when prompted
+## Installation
 
-*Beta Note:* To get pre-release updates, click the gear icon next to the extension and select "Switch to Pre-Release Version".
+1. Open Extensions (`⌘⇧X` / `Ctrl+Shift+X`)
+2. Search "Clipboard Stacker" and install
+3. Reload VSCode
 
-## Core Features
+*Beta:* To get pre-release updates, click the gear icon → **Switch to Pre-Release Version**
 
-- **Clipboard Stacking**  
-  Maintain multiple code snippets/files in a single buffer
-- **Quick Controls**:
-  - Add code selections (`⌘⌃C`/`Ctrl+Shift+C`)
-  - Add files via QuickPick (`⌘M`/`Ctrl+M`)
-  - Clear buffer (`⌘⇧⌫`/`Ctrl+Shift+Backspace`)
-    - Can also clear buffer via status bar in bottom right
+---
 
-## 📜 License
-Distributed under the [MIT License](LICENSE).
+## Commands & Shortcuts
 
-## Known Issues (Beta)
+| Command                        | macOS                   | Windows/Linux            |
+|--------------------------------|-------------------------|--------------------------|
+| Add Selection to Buffer        | Cmd+Ctrl+C              | Ctrl+Alt+C               |
+| Add File(s) to Buffer          | Cmd+M                   | Ctrl+M                   |
+| Clear Clipboard Buffer         | Cmd+Ctrl+Backspace      | Ctrl+Shift+Backspace     |
+
+Use the Command Palette (`⌘⇧P` / `Ctrl+Shift+P`) or the 🪣 status bar icon for quick actions.
+
+---
+
+## Requirements
+
+- VSCode 1.98.0+
+
+---
+
+## Links
+
+- [Repository](https://github.com/ryanata/clipboard-stacker)
+- [License (MIT)](LICENSE)
+
+---
+
+## Known Issues
 
 - No settings to customize copy behavior
 
+---
+
 ## Release Notes
 
+### 0.1.2 Prerelease
+
+- Status bar menu now allows deleting individual snippets directly
+- Status bar menu now allows re-copying the current buffer contents
+- Improved quick access to buffer management from the status bar
+
 ### 0.1.0 Prerelease
-Initial pre-release with core functionality:
-- Code snippet accumulation with context
-- Multi-file selection
-- Status bar integration
+
+- Initial pre-release with core functionality:
+  - Code snippet accumulation with context
+  - Multi-file selection
+  - Status bar integration
