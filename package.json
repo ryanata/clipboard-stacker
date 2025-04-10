@@ -35,7 +35,7 @@
       {
         "command": "clipboard-stacker.addToBuffer",
         "mac": "cmd+ctrl+c",
-        "windows": "ctrl+shift+c",
+        "windows": "ctrl+alt+c",
         "when": "editorHasSelection"
       },
       {
@@ -45,7 +45,7 @@
       },
       {
         "command": "clipboard-stacker.clearBuffer",
-        "mac": "cmd+shift+backspace",
+        "mac": "cmd+ctrl+backspace",
         "windows": "ctrl+shift+backspace",
         "when": "!editorHasSelection"
       }
